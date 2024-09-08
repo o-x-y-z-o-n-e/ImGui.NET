@@ -16,6 +16,46 @@ namespace CodeGenerator
         public FunctionDefinition[] Functions;
         public Dictionary<string, MethodVariant> Variants;
 
+        // Begin Modification
+        // Expose DockBuilder internals and the other types needed by the DockBuilder internals.
+        private static readonly List<string> AllowedInternalSymbols = new()
+        {
+            "DockBuilder",
+            "ImDrawDataBuilder",
+            "ImGuiAxis",
+            "ImGuiAxis",
+            "ImGuiDataAuthority",
+            "ImGuiDockNode",
+            "ImGuiDockNodeFlags",
+            "ImGuiDockNodeState",
+            "ImGuiItemStatusFlags",
+            "ImGuiLastItemData",
+            "ImGuiLayoutType",
+            "ImGuiMenuColumns",
+            "ImGuiNavLayer",
+            "ImGuiOldColumnData",
+            "ImGuiOldColumnFlags",
+            "ImGuiOldColumns",
+            "ImGuiStackSizes",
+            "ImGuiTabBar",
+            "ImGuiTabItem",
+            "ImGuiViewportP",
+            "ImGuiWindow",
+            "ImRect",
+            "ImVec2ih",
+        };
+
+        private static bool IsAllowedInternalSymbol(string name)
+        {
+            foreach (var symbol in AllowedInternalSymbols)
+            {
+                if (name.Contains(symbol))
+                    return true;
+            }
+            return false;
+        }
+        // End Modification
+
         static int GetInt(JToken token, string key)
         {
             var v = token[key];
@@ -66,9 +106,17 @@ namespace CodeGenerator
             {
                 JProperty jp = (JProperty)jt;
                 string name = jp.Name;
-                if (typeLocations?[jp.Name]?.Value<string>().Contains("internal") ?? false) {
-                    return null;
+                // Begin Modification
+                var location = typeLocations?[jp.Name]?.Value<string>();
+                if (location != null)
+                {
+                    if (location.Contains("internal") && !IsAllowedInternalSymbol(name))
+                        return null;
                 }
+                // if (typeLocations?[jp.Name]?.Value<string>().Contains("internal") ?? false) {
+                //     return null;
+                // }
+                // End Modification
                 EnumMember[] elements = jp.Values().Select(v =>
                 {
                     return new EnumMember(v["name"].ToString(), v["calc_value"].ToString());
@@ -80,9 +128,17 @@ namespace CodeGenerator
             {
                 JProperty jp = (JProperty)jt;
                 string name = jp.Name;
-                if (typeLocations?[jp.Name]?.Value<string>().Contains("internal") ?? false) {
-                    return null;
+                // Begin Modification
+                var location = typeLocations?[jp.Name]?.Value<string>();
+                if (location != null)
+                {
+                    if (location.Contains("internal") && !IsAllowedInternalSymbol(name))
+                        return null;
                 }
+                // if (typeLocations?[jp.Name]?.Value<string>().Contains("internal") ?? false) {
+                //     return null;
+                // }
+                // End Modification
                 TypeReference[] fields = jp.Values().Select(v =>
                 {
                     if (v["type"].ToString().Contains("static")) { return null; }
@@ -121,7 +177,15 @@ namespace CodeGenerator
                         }
                     }
                     if (friendlyName == null) { return null; }
-                    if (val["location"]?.ToString().Contains("internal") ?? false) return null;
+                    // Begin Modification
+                    var location = val["location"]?.ToString();
+                    if (location != null)
+                    {
+                        if (location.Contains("internal") && !IsAllowedInternalSymbol(name))
+                            return null;
+                    }
+                    // if (val["location"]?.ToString().Contains("internal") ?? false) return null;
+                    // End Modification
 
                     string exportedName = ov_cimguiname;
                     if (exportedName == null)

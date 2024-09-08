@@ -167,8 +167,57 @@ namespace CodeGenerator
 
                         if (field.ArraySize != 0)
                         {
+                            // Begin Modification
+                            // The unmodified code produces invalid C# when the type string isn't a simple type.
+                            // Copying much of the logic below to replace raw pointers and ImVector types.
+                            // The resulting generated code compiles but it is untested.
+                            // This is being done because exposing DockBuilder internals requires exposing more types
+                            // use complex RangeAccessors.
                             string addrTarget = TypeInfo.LegalFixedTypes.Contains(rawType) ? $"NativePtr->{field.Name}" : $"&NativePtr->{field.Name}_0";
-                            writer.WriteLine($"public RangeAccessor<{typeStr}> {field.Name} => new RangeAccessor<{typeStr}>({addrTarget}, {field.ArraySize});");
+                            if (typeStr.Contains("ImVector"))
+                            {
+                                string vectorElementType = GetTypeString(field.TemplateType, false);
+
+                                if (TypeInfo.WellKnownTypes.TryGetValue(vectorElementType, out string wellKnown))
+                                {
+                                    vectorElementType = wellKnown;
+                                }
+
+                                if (GetWrappedType(vectorElementType + "*", out string wrappedElementType))
+                                {
+                                    writer.WriteLine($"public RangeAccessor<ImPtrVector<{wrappedElementType}>> {field.Name} => new RangeAccessor<ImPtrVector<{wrappedElementType}>>({addrTarget}, {field.ArraySize});");
+                                }
+                                else
+                                {
+                                    if (GetWrappedType(vectorElementType, out wrappedElementType))
+                                    {
+                                        vectorElementType = wrappedElementType;
+                                    }
+                                    writer.WriteLine($"public RangeAccessor<ImVector<{vectorElementType}>> {field.Name} => new RangeAccessor<ImVector<{vectorElementType}>>({addrTarget}, {field.ArraySize});");
+                                }
+                            }
+                            else if (typeStr.Contains("*") && !typeStr.Contains("ImVector"))
+                            {
+                                if (GetWrappedType(typeStr, out string wrappedTypeName))
+                                {
+                                    writer.WriteLine($"public RangeAccessor<{wrappedTypeName}> {field.Name} => new RangeAccessor<{wrappedTypeName}>({addrTarget}, {field.ArraySize});");
+                                }
+                                else if (typeStr == "byte*" && IsStringFieldName(field.Name))
+                                {
+                                    writer.WriteLine($"public RangeAccessor<NullTerminatedString> {field.Name} => new RangeAccessor<NullTerminatedString>({addrTarget}, {field.ArraySize});");
+                                }
+                                else
+                                {
+                                    writer.WriteLine($"public RangeAccessor<IntPtr> {field.Name} => RangeAccessor<IntPtr>({addrTarget}, {field.ArraySize})");
+                                }
+                            }
+                            else
+                            {
+                                writer.WriteLine($"public RangeAccessor<{typeStr}> {field.Name} => new RangeAccessor<{typeStr}>({addrTarget}, {field.ArraySize});");
+                            }
+                            // string addrTarget = TypeInfo.LegalFixedTypes.Contains(rawType) ? $"NativePtr->{field.Name}" : $"&NativePtr->{field.Name}_0";
+                            // writer.WriteLine($"public RangeAccessor<{typeStr}> {field.Name} => new RangeAccessor<{typeStr}>({addrTarget}, {field.ArraySize});");
+                            // End Modification
                         }
                         else if (typeStr.Contains("ImVector"))
                         {

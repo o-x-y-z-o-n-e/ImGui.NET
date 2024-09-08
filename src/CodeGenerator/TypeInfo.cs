@@ -22,6 +22,10 @@ namespace CodeGenerator
             { "ImS64", "long" },
             { "unsigned short", "ushort" },
             { "unsigned int", "uint" },
+            // Begin Modification
+            // Untested.
+            { "ImVec1", "float" },
+            // End Modification
             { "ImVec2", "Vector2" },
             { "ImVec2_Simple", "Vector2" },
             { "ImVec3", "Vector3" },
@@ -57,6 +61,9 @@ namespace CodeGenerator
             { "ImPlotTransform", "IntPtr" },
             { "ImGuiKeyChord", "ImGuiKey" },
             { "ImGuiSelectionUserData", "long" },
+            // Begin Modification
+            { "char[5]", "char*" },
+            // End Modification
         };
         
         public static readonly List<string> WellKnownEnums = new List<string>()
@@ -93,6 +100,15 @@ namespace CodeGenerator
             { "((void*)0)", "null" },
             { "NULL", "null"},
             { "nullptr", "null"},
+            // Begin Modification
+            // Untested.
+            { "ImVec1(0)", "0.0f" },
+            { "ImVec1(0.0f)", "0.0f" },
+            { "ImVec1(0.0)", "0.0f" },
+            { "ImVec1(1)", "1.0f" },
+            { "ImVec1(1.0f)", "1.0f" },
+            { "ImVec1(1.0)", "1.0f" },
+            // End Modification
             { "ImVec2(0,0)", "new Vector2()" },
             { "ImVec2(0.0f,0.0f)", "new Vector2()" },
             { "ImVec2(-FLT_MIN,0)", "new Vector2(-float.MinValue, 0.0f)" },
